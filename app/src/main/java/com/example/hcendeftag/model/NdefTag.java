@@ -1,4 +1,4 @@
-package com.example.hcendeftag.model;
+package com.devhjz.ndefemulator.model;
 
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;

@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.example.hcendeftag.MainActivity">
+    tools:context="com.devhjz.ndefemulator.MainActivity">
     <item
         android:id="@+id/action_nfc_reader"
         android:title="NFC 读卡"

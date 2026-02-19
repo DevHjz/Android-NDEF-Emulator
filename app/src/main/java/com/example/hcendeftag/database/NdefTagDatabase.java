@@ -1,4 +1,4 @@
-package com.example.hcendeftag.database;
+package com.devhjz.ndefemulator.database;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-import com.example.hcendeftag.model.NdefTag;
+import com.devhjz.ndefemulator.model.NdefTag;
 
 import org.json.JSONArray;
 import org.json.JSONException;

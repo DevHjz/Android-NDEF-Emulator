@@ -1,4 +1,4 @@
-package com.example.hcendeftag.adapter;
+package com.devhjz.ndefemulator.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,8 +10,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.hcendeftag.R;
-import com.example.hcendeftag.model.NdefTag;
+import com.devhjz.ndefemulator.R;
+import com.devhjz.ndefemulator.model.NdefTag;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

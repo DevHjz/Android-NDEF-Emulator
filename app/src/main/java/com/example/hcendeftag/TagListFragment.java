@@ -1,4 +1,4 @@
-package com.example.hcendeftag;
+package com.devhjz.ndefemulator;
 
 import android.content.ComponentName;
 import android.content.Intent;
@@ -14,10 +14,10 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.example.hcendeftag.adapter.NdefTagAdapter;
-import com.example.hcendeftag.database.NdefTagDatabase;
-import com.example.hcendeftag.databinding.FragmentTagListBinding;
-import com.example.hcendeftag.model.NdefTag;
+import com.devhjz.ndefemulator.adapter.NdefTagAdapter;
+import com.devhjz.ndefemulator.database.NdefTagDatabase;
+import com.devhjz.ndefemulator.databinding.FragmentTagListBinding;
+import com.devhjz.ndefemulator.model.NdefTag;
 
 import java.util.List;
 

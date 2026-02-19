@@ -1,4 +1,4 @@
-package com.example.hcendeftag;
+package com.devhjz.ndefemulator;
 
 import org.junit.Test;
 

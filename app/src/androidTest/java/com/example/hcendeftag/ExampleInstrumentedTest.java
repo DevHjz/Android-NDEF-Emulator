@@ -1,4 +1,4 @@
-package com.example.hcendeftag;
+package com.devhjz.ndefemulator;
 
 import android.content.Context;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.example.hcendeftag", appContext.getPackageName());
+        assertEquals("com.devhjz.ndefemulator", appContext.getPackageName());
     }
 }

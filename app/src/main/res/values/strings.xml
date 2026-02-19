@@ -16,6 +16,6 @@
     <string name="btn_delete">删除</string>
     <string name="btn_enable_hce">启用 HCE</string>
     <string name="btn_disable_hce">禁用 HCE</string>
-    <string name="btn_register_payment">注册付款应用</string>
+    <string name="btn_register_payment">注册默认NFC应用</string>
     
 </resources>

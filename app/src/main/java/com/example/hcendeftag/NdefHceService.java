@@ -1,4 +1,4 @@
-package com.example.hcendeftag;
+package com.devhjz.ndefemulator;
 
 import android.content.ComponentName;
 import android.content.Intent;
@@ -8,8 +8,8 @@ import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.example.hcendeftag.database.NdefTagDatabase;
-import com.example.hcendeftag.model.NdefTag;
+import com.devhjz.ndefemulator.database.NdefTagDatabase;
+import com.devhjz.ndefemulator.model.NdefTag;
 
 import java.util.Arrays;
 
@@ -18,7 +18,7 @@ import java.util.Arrays;
  */
 public class NdefHceService extends HostApduService {
 
-    public static final ComponentName COMPONENT = new ComponentName("com.example.hcendeftag", NdefHceService.class.getName());
+    public static final ComponentName COMPONENT = new ComponentName("com.devhjz.ndefemulator", NdefHceService.class.getName());
     private final static String TAG = "NdefHceService";
 
     // ISO-DEP APDU 指令集
