@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 关键修改1：将外层 LinearLayout 改为 ConstraintLayout -->
 <androidx.constraintlayout.widget.ConstraintLayout 
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -8,6 +7,7 @@
     android:padding="16dp"
     android:background="#F5F5F5">
 
+    <!-- 状态提示卡片 -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_status"
         android:layout_width="match_parent"
@@ -32,6 +32,7 @@
             android:textColor="@android:color/white" />
     </androidx.cardview.widget.CardView>
 
+    <!-- 标题 -->
     <TextView
         android:id="@+id/tv_title"
         android:layout_width="match_parent"
@@ -44,6 +45,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="8dp" />
 
+    <!-- 标签信息卡片 -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_info"
         android:layout_width="match_parent"
@@ -93,13 +95,13 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- 关键修改2：移除错误的 layout_marginTop="auto"，通过 ConstraintLayout 约束实现底部对齐 -->
+    <!-- 底部按钮区域（核心修复：语法正确的LinearLayout） -->
     <LinearLayout
         android:id="@+id/ll_buttons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"  <!-- 核心：让按钮区域靠底部 -->
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
