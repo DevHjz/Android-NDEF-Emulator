@@ -82,7 +82,7 @@ public class TagListFragment extends Fragment {
     private void setDefaultTag(NdefTag tag) {
         database.setDefaultNdefTag(tag.getId());
         refreshTagList();
-        // 同时更新当前正在模拟的内容
+        // 设置默认后立即启动该标签的模拟
         hceManager.startHceSimulation(tag);
         Toast.makeText(requireContext(), "已设为默认并启动模拟: " + tag.getName(), Toast.LENGTH_SHORT).show();
     }
@@ -128,8 +128,8 @@ public class TagListFragment extends Fragment {
 
                 @Override
                 public void onEdit(NdefTag tag) {
-                    // 编辑功能暂未实现，可弹出对话框修改名称
-                    Toast.makeText(requireContext(), "编辑功能暂未实现", Toast.LENGTH_SHORT).show();
+                    // 暂不实现复杂的编辑，仅提示
+                    Toast.makeText(requireContext(), "编辑功能暂未开放", Toast.LENGTH_SHORT).show();
                 }
             });
             listView.setAdapter(adapter);
@@ -143,6 +143,12 @@ public class TagListFragment extends Fragment {
      */
     private void registerAsPaymentApp() {
         hceManager.registerAsDefaultPaymentApp();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshTagList();
     }
 
     @Override

@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.nfc.NfcAdapter;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
@@ -42,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
 
         nfcReader = new NfcReaderManager(this);
 
-        // FAB 按钮：启用 NdefService
+        // FAB 按钮：快速启用 HCE 服务
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -56,9 +58,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_nfc_reader) {
+            navController.navigate(R.id.action_to_nfc_reader);
+            return true;
+        } else if (id == R.id.action_tag_list) {
+            navController.navigate(R.id.action_to_tag_list);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        setIntent(intent); // 重要：更新 Activity 的 Intent
+        setIntent(intent);
         handleNfcIntent(intent);
     }
 
@@ -84,23 +105,25 @@ public class MainActivity extends AppCompatActivity {
                     NfcAdapter.ACTION_TAG_DISCOVERED.equals(action) ||
                     NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
                 
-                // 如果当前不在读卡页面，则导航过去
+                // 确保在读卡页面
                 if (navController.getCurrentDestination() != null && 
                     navController.getCurrentDestination().getId() != R.id.NfcReaderFragment) {
                     navController.navigate(R.id.action_to_nfc_reader);
                 }
                 
-                // 寻找 NfcReaderFragment 并传递 Intent
-                Fragment navHostFragment = getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main);
-                if (navHostFragment != null) {
-                    List<Fragment> fragments = navHostFragment.getChildFragmentManager().getFragments();
-                    for (Fragment fragment : fragments) {
-                        if (fragment instanceof NfcReaderFragment && fragment.isVisible()) {
-                            ((NfcReaderFragment) fragment).onNewIntent(intent);
-                            break;
+                // 延迟一小会儿确保 Fragment 已加载并可见
+                binding.getRoot().postDelayed(() -> {
+                    Fragment navHostFragment = getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main);
+                    if (navHostFragment != null) {
+                        List<Fragment> fragments = navHostFragment.getChildFragmentManager().getFragments();
+                        for (Fragment fragment : fragments) {
+                            if (fragment instanceof NfcReaderFragment && fragment.isVisible()) {
+                                ((NfcReaderFragment) fragment).onNewIntent(intent);
+                                break;
+                            }
                         }
                     }
-                }
+                }, 200);
             }
         }
     }

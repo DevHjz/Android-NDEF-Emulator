@@ -13,12 +13,15 @@ import com.example.hcendeftag.model.NdefTag;
 
 import java.util.Arrays;
 
+/**
+ * 核心 HCE 服务，模拟 NFC Forum Type 4 标签
+ */
 public class NdefHceService extends HostApduService {
 
     public static final ComponentName COMPONENT = new ComponentName("com.example.hcendeftag", NdefHceService.class.getName());
-
     private final static String TAG = "NdefHceService";
 
+    // ISO-DEP APDU 指令集
     private static final byte[] SELECT_APPLICATION = {
             (byte) 0x00, (byte) 0xA4, (byte) 0x04, (byte) 0x00, (byte) 0x07,
             (byte) 0xD2, (byte) 0x76, (byte) 0x00, (byte) 0x00, (byte) 0x85, (byte) 0x01, (byte) 0x01,
@@ -33,6 +36,7 @@ public class NdefHceService extends HostApduService {
             (byte) 0x00, (byte) 0xa4, (byte) 0x00, (byte) 0x0c, (byte) 0x02, (byte) 0xE1, (byte) 0x04
     };
 
+    // NDEF 能力容器文件 (CC File)
     private final static byte[] CAPABILITY_CONTAINER_FILE = new byte[]{
             0x00, 0x0f, // CCLEN
             0x20, // Mapping Version
@@ -57,50 +61,42 @@ public class NdefHceService extends HostApduService {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "onCreate");
-        mAppSelected = false;
-        mCcSelected = false;
-        mNdefSelected = false;
-        
+        Log.d(TAG, "HCE Service Created");
         database = new NdefTagDatabase(this);
         loadDefaultNdefTag();
     }
 
+    /**
+     * 加载默认标签或初始欢迎消息
+     */
     private void loadDefaultNdefTag() {
         NdefTag defaultTag = database.getDefaultNdefTag();
         if (defaultTag != null) {
             if (defaultTag.getNdefHexData() != null && !defaultTag.getNdefHexData().isEmpty()) {
-                byte[] ndefBytes = hexStringToByteArray(defaultTag.getNdefHexData());
-                initializeNdefRecordFile(ndefBytes);
-                Log.d(TAG, "已加载默认 NDEF 标签 (Hex): " + defaultTag.getName());
+                initializeNdefRecordFile(hexStringToByteArray(defaultTag.getNdefHexData()));
+                Log.d(TAG, "Loaded default tag: " + defaultTag.getName());
             } else {
-                updateNdefRecordFile(defaultTag.getNdefContent(), defaultTag.getContentType());
-                Log.d(TAG, "已加载默认 NDEF 标签 (Text): " + defaultTag.getName());
+                updateNdefFromText(defaultTag.getNdefContent());
             }
         } else {
-            initializeNdefRecordFile(getNdefMessage("欢迎使用 NDEF 模拟器").toByteArray());
+            updateNdefFromText("NDEF 模拟器已就绪");
         }
+    }
+
+    private void updateNdefFromText(String text) {
+        NdefRecord record = NdefRecord.createTextRecord("zh", text);
+        NdefMessage msg = new NdefMessage(record);
+        initializeNdefRecordFile(msg.toByteArray());
     }
 
     private void initializeNdefRecordFile(byte[] ndefBytes) {
         if (ndefBytes == null) return;
         int nlen = ndefBytes.length;
+        // NDEF 文件前两个字节是长度
         mNdefRecordFile = new byte[nlen + 2];
         mNdefRecordFile[0] = (byte) ((nlen & 0xff00) / 256);
         mNdefRecordFile[1] = (byte) (nlen & 0xff);
         System.arraycopy(ndefBytes, 0, mNdefRecordFile, 2, nlen);
-    }
-
-    private void updateNdefRecordFile(String content, String contentType) {
-        NdefMessage ndefMessage;
-        if ("URL".equals(contentType)) {
-            ndefMessage = getNdefUrlMessage(content);
-        } else {
-            ndefMessage = getNdefMessage(content);
-        }
-        if (ndefMessage != null) {
-            initializeNdefRecordFile(ndefMessage.toByteArray());
-        }
     }
 
     @Override
@@ -109,20 +105,10 @@ public class NdefHceService extends HostApduService {
             byte[] ndefBytes = intent.getByteArrayExtra("ndefMessage");
             if (ndefBytes != null) {
                 initializeNdefRecordFile(ndefBytes);
-                Log.d(TAG, "NDEF 模拟内容已更新");
+                Log.d(TAG, "NDEF content updated via Intent");
             }
         }
         return START_STICKY;
-    }
-
-    private NdefMessage getNdefMessage(String ndefData) {
-        NdefRecord ndefRecord = NdefRecord.createTextRecord("en", ndefData);
-        return new NdefMessage(ndefRecord);
-    }
-
-    private NdefMessage getNdefUrlMessage(String ndefData) {
-        if (ndefData == null || ndefData.isEmpty()) return null;
-        return new NdefMessage(NdefRecord.createUri(ndefData));
     }
 
     @Override
@@ -141,6 +127,7 @@ public class NdefHceService extends HostApduService {
             mNdefSelected = true;
             return SUCCESS_SW;
         } else if (commandApdu.length >= 4 && commandApdu[0] == (byte) 0x00 && commandApdu[1] == (byte) 0xb0) {
+            // READ_BINARY 指令
             int offset = (0x00ff & commandApdu[2]) * 256 + (0x00ff & commandApdu[3]);
             int le = (commandApdu.length > 4) ? (0x00ff & commandApdu[4]) : 0;
 

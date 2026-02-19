@@ -49,7 +49,7 @@ public class NfcReaderFragment extends Fragment {
         // 检查 NFC 支持
         if (!nfcReader.isNfcSupported()) {
             binding.statusText.setText("设备不支持 NFC");
-            binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_red_light));
+            binding.statusText.setBackgroundColor(0xFFFF4444);
             return;
         }
 
@@ -67,11 +67,11 @@ public class NfcReaderFragment extends Fragment {
 
     private void updateNfcStatus() {
         if (!nfcReader.isNfcEnabled()) {
-            binding.statusText.setText("NFC 未启用，请在设置中启用 NFC");
-            binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_orange_light));
+            binding.statusText.setText("NFC 未启用，请在设置中开启");
+            binding.statusText.setBackgroundColor(0xFFFFBB33);
         } else {
             binding.statusText.setText("请将 NFC 标签靠近设备");
-            binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_green_light));
+            binding.statusText.setBackgroundColor(0xFF2196F3);
         }
     }
 
@@ -103,15 +103,15 @@ public class NfcReaderFragment extends Fragment {
             String contentType = nfcReader.getNdefContentType(ndefMessage);
 
             binding.contentText.setText(content);
-            binding.typeText.setText("类型: " + contentType);
-            binding.statusText.setText("成功读取 NDEF 标签 (" + ndefMessage.getRecords().length + " 条记录)");
-            binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_green_light));
+            binding.typeText.setText("检测到标签: " + contentType);
+            binding.statusText.setText("读取成功 (" + ndefMessage.getRecords().length + " 条记录)");
+            binding.statusText.setBackgroundColor(0xFF4CAF50);
             
             binding.btnSave.setEnabled(true);
             binding.btnSimulate.setEnabled(true);
         } else {
-            binding.statusText.setText("读取失败或标签不包含 NDEF 数据");
-            binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_red_light));
+            binding.statusText.setText("读取失败，请重试");
+            binding.statusText.setBackgroundColor(0xFFFF4444);
         }
     }
 
@@ -124,19 +124,18 @@ public class NfcReaderFragment extends Fragment {
             return;
         }
 
-        // 显示对话框让用户输入标签名称
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("保存标签");
-        builder.setMessage("请输入标签名称以方便查找:");
-
-        EditText input = new EditText(requireContext());
-        input.setHint("例如: 我的门禁卡");
+        builder.setTitle("保存并命名标签");
+        
+        final EditText input = new EditText(requireContext());
+        input.setHint("输入标签名称，例如：公司门禁卡");
+        input.setPadding(40, 40, 40, 40);
         builder.setView(input);
 
         builder.setPositiveButton("保存", (dialog, which) -> {
             String tagName = input.getText().toString().trim();
             if (tagName.isEmpty()) {
-                Toast.makeText(requireContext(), "标签名称不能为空", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "名称不能为空", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -170,7 +169,7 @@ public class NfcReaderFragment extends Fragment {
         }
 
         hceManager.startHceSimulationWithMessage(currentNdefMessage);
-        Toast.makeText(requireContext(), "已启动 HCE 模拟当前标签内容", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), "已启动 HCE 模拟", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -178,10 +177,9 @@ public class NfcReaderFragment extends Fragment {
      */
     private void clearCurrentTag() {
         currentNdefMessage = null;
-        binding.contentText.setText("");
-        binding.typeText.setText("");
-        binding.statusText.setText("请将 NFC 标签靠近设备");
-        binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_green_light));
+        binding.contentText.setText("读取到的 NDEF 详细内容将显示在这里...");
+        binding.typeText.setText("等待读取...");
+        updateNfcStatus();
         binding.btnSave.setEnabled(false);
         binding.btnSimulate.setEnabled(false);
     }

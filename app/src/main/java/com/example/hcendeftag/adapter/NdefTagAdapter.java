@@ -24,7 +24,6 @@ public class NdefTagAdapter extends BaseAdapter {
     private Context context;
     private List<NdefTag> tags;
     private OnTagActionListener onTagActionListener;
-    private int selectedPosition = -1;
 
     public interface OnTagActionListener {
         void onSimulate(NdefTag tag);
@@ -74,40 +73,39 @@ public class NdefTagAdapter extends BaseAdapter {
 
         NdefTag tag = tags.get(position);
 
-        // 设置标签名称
         holder.tagName.setText(tag.getName());
-
-        // 设置内容类型
-        holder.tagType.setText("类型: " + tag.getContentType());
-
-        // 设置内容预览（截断长内容）
+        holder.tagType.setText(tag.getContentType());
+        
         String content = tag.getNdefContent();
-        if (content != null && content.length() > 50) {
-            holder.tagContent.setText(content.substring(0, 50) + "...");
+        if (content != null && content.length() > 60) {
+            holder.tagContent.setText(content.substring(0, 60) + "...");
         } else {
             holder.tagContent.setText(content);
         }
 
-        // 设置时间
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
-        holder.tagTime.setText(sdf.format(new Date(tag.getLastModifiedTime())));
+        holder.tagTime.setText("保存时间: " + sdf.format(new Date(tag.getLastModifiedTime())));
 
-        // 设置默认单选按钮
+        // 默认标签状态
         holder.radioDefault.setChecked(tag.isDefault());
-        holder.radioDefault.setOnClickListener(v -> {
-            if (onTagActionListener != null) {
+        
+        // 点击整个条目或单选框都触发设置默认
+        View.OnClickListener setDefaultListener = v -> {
+            if (onTagActionListener != null && !tag.isDefault()) {
                 onTagActionListener.onSetDefault(tag);
             }
-        });
+        };
+        convertView.setOnClickListener(setDefaultListener);
+        holder.radioDefault.setOnClickListener(setDefaultListener);
 
-        // 设置模拟按钮
+        // 模拟按钮
         holder.btnSimulate.setOnClickListener(v -> {
             if (onTagActionListener != null) {
                 onTagActionListener.onSimulate(tag);
             }
         });
 
-        // 设置删除按钮
+        // 删除按钮
         holder.btnDelete.setOnClickListener(v -> {
             if (onTagActionListener != null) {
                 onTagActionListener.onDelete(tag);
@@ -117,24 +115,15 @@ public class NdefTagAdapter extends BaseAdapter {
         return convertView;
     }
 
-    /**
-     * 更新数据
-     */
     public void updateData(List<NdefTag> newTags) {
         this.tags = newTags;
         notifyDataSetChanged();
     }
 
-    /**
-     * 设置标签操作监听器
-     */
     public void setOnTagActionListener(OnTagActionListener listener) {
         this.onTagActionListener = listener;
     }
 
-    /**
-     * ViewHolder 类
-     */
     private static class ViewHolder {
         TextView tagName;
         TextView tagType;
