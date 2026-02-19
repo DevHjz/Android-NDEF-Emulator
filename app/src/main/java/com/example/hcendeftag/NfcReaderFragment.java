@@ -80,9 +80,8 @@ public class NfcReaderFragment extends Fragment {
         nfcReader.disableForegroundDispatch();
     }
 
-    @Override
+    // 修复：移除 @Override 注解（Fragment无此父类方法），删除 super.onNewIntent 调用
     public void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
         handleNfcIntent(intent);
     }
 

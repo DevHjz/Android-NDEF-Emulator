@@ -3,13 +3,11 @@ package com.example.hcendeftag;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.nfc.NdefMessage;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import android.view.View;
-
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -17,7 +15,8 @@ import androidx.navigation.ui.NavigationUI;
 
 import com.example.hcendeftag.databinding.ActivityMainBinding;
 import com.example.hcendeftag.nfc.NfcReaderManager;
-import android.widget.Toast;
+
+import java.util.stream.Stream;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -73,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 处理 NFC Intent
+     * 处理 NFC Intent，并传递给 NfcReaderFragment
      */
     private void handleNfcIntent(Intent intent) {
         if (intent != null && intent.getAction() != null) {
@@ -83,6 +82,20 @@ public class MainActivity extends AppCompatActivity {
                     action.equals("android.nfc.action.TECH_DISCOVERED")) {
                 // 导航到 NFC 读卡 Fragment
                 navController.navigate(R.id.action_to_nfc_reader);
+                
+                // 核心补充：获取 Fragment 实例并传递 Intent
+                NfcReaderFragment readerFragment = (NfcReaderFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.nav_host_fragment_content_main)
+                        .getChildFragmentManager()
+                        .getFragments()
+                        .stream()
+                        .filter(frag -> frag instanceof NfcReaderFragment)
+                        .findFirst()
+                        .orElse(null);
+                
+                if (readerFragment != null) {
+                    readerFragment.onNewIntent(intent); // 将 Intent 传递给 Fragment 处理
+                }
             }
         }
     }
