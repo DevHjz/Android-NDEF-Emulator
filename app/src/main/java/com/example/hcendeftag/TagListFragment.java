@@ -1,12 +1,10 @@
 package com.example.hcendeftag;
 
 import android.app.AlertDialog;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -49,32 +47,7 @@ public class TagListFragment extends Fragment {
         listView = binding.tagListView;
 
         // 初始化适配器
-        List<NdefTag> tags = database.getAllNdefTags();
-        adapter = new NdefTagAdapter(requireContext(), tags);
-        listView.setAdapter(adapter);
-
-        // 设置标签操作监听器
-        adapter.setOnTagActionListener(new NdefTagAdapter.OnTagActionListener() {
-            @Override
-            public void onSimulate(NdefTag tag) {
-                simulateTag(tag);
-            }
-
-            @Override
-            public void onSetDefault(NdefTag tag) {
-                setDefaultTag(tag);
-            }
-
-            @Override
-            public void onDelete(NdefTag tag) {
-                deleteTag(tag);
-            }
-
-            @Override
-            public void onEdit(NdefTag tag) {
-                editTag(tag);
-            }
-        });
+        refreshTagList();
 
         // 刷新按钮
         binding.btnRefresh.setOnClickListener(v -> refreshTagList());
@@ -100,7 +73,7 @@ public class TagListFragment extends Fragment {
      */
     private void simulateTag(NdefTag tag) {
         hceManager.startHceSimulation(tag);
-        Toast.makeText(requireContext(), "已启动 HCE 模拟: " + tag.getName(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), "正在模拟: " + tag.getName(), Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -109,7 +82,9 @@ public class TagListFragment extends Fragment {
     private void setDefaultTag(NdefTag tag) {
         database.setDefaultNdefTag(tag.getId());
         refreshTagList();
-        Toast.makeText(requireContext(), "已设置为默认标签: " + tag.getName(), Toast.LENGTH_SHORT).show();
+        // 同时更新当前正在模拟的内容
+        hceManager.startHceSimulation(tag);
+        Toast.makeText(requireContext(), "已设为默认并启动模拟: " + tag.getName(), Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -129,19 +104,38 @@ public class TagListFragment extends Fragment {
     }
 
     /**
-     * 编辑标签
-     */
-    private void editTag(NdefTag tag) {
-        // 这里可以实现编辑功能
-        Toast.makeText(requireContext(), "编辑功能: " + tag.getName(), Toast.LENGTH_SHORT).show();
-    }
-
-    /**
      * 刷新标签列表
      */
     private void refreshTagList() {
         List<NdefTag> tags = database.getAllNdefTags();
-        adapter.updateData(tags);
+        if (adapter == null) {
+            adapter = new NdefTagAdapter(requireContext(), tags);
+            adapter.setOnTagActionListener(new NdefTagAdapter.OnTagActionListener() {
+                @Override
+                public void onSimulate(NdefTag tag) {
+                    simulateTag(tag);
+                }
+
+                @Override
+                public void onSetDefault(NdefTag tag) {
+                    setDefaultTag(tag);
+                }
+
+                @Override
+                public void onDelete(NdefTag tag) {
+                    deleteTag(tag);
+                }
+
+                @Override
+                public void onEdit(NdefTag tag) {
+                    // 编辑功能暂未实现，可弹出对话框修改名称
+                    Toast.makeText(requireContext(), "编辑功能暂未实现", Toast.LENGTH_SHORT).show();
+                }
+            });
+            listView.setAdapter(adapter);
+        } else {
+            adapter.updateData(tags);
+        }
     }
 
     /**
@@ -149,7 +143,6 @@ public class TagListFragment extends Fragment {
      */
     private void registerAsPaymentApp() {
         hceManager.registerAsDefaultPaymentApp();
-        Toast.makeText(requireContext(), "已尝试注册为默认 NFC 付款应用", Toast.LENGTH_SHORT).show();
     }
 
     @Override

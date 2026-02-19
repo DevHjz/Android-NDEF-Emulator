@@ -3,11 +3,13 @@ package com.example.hcendeftag;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.nfc.NfcAdapter;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -16,7 +18,7 @@ import androidx.navigation.ui.NavigationUI;
 import com.example.hcendeftag.databinding.ActivityMainBinding;
 import com.example.hcendeftag.nfc.NfcReaderManager;
 
-import java.util.stream.Stream;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -49,13 +51,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 处理来自 NFC 标签的 Intent
+        // 处理启动时的 NFC Intent
         handleNfcIntent(getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent); // 重要：更新 Activity 的 Intent
         handleNfcIntent(intent);
     }
 
@@ -77,24 +80,26 @@ public class MainActivity extends AppCompatActivity {
     private void handleNfcIntent(Intent intent) {
         if (intent != null && intent.getAction() != null) {
             String action = intent.getAction();
-            if (action.equals("android.nfc.action.NDEF_DISCOVERED") ||
-                    action.equals("android.nfc.action.TAG_DISCOVERED") ||
-                    action.equals("android.nfc.action.TECH_DISCOVERED")) {
-                // 导航到 NFC 读卡 Fragment
-                navController.navigate(R.id.action_to_nfc_reader);
+            if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action) ||
+                    NfcAdapter.ACTION_TAG_DISCOVERED.equals(action) ||
+                    NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
                 
-                // 核心补充：获取 Fragment 实例并传递 Intent
-                NfcReaderFragment readerFragment = (NfcReaderFragment) getSupportFragmentManager()
-                        .findFragmentById(R.id.nav_host_fragment_content_main)
-                        .getChildFragmentManager()
-                        .getFragments()
-                        .stream()
-                        .filter(frag -> frag instanceof NfcReaderFragment)
-                        .findFirst()
-                        .orElse(null);
+                // 如果当前不在读卡页面，则导航过去
+                if (navController.getCurrentDestination() != null && 
+                    navController.getCurrentDestination().getId() != R.id.NfcReaderFragment) {
+                    navController.navigate(R.id.action_to_nfc_reader);
+                }
                 
-                if (readerFragment != null) {
-                    readerFragment.onNewIntent(intent); // 将 Intent 传递给 Fragment 处理
+                // 寻找 NfcReaderFragment 并传递 Intent
+                Fragment navHostFragment = getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main);
+                if (navHostFragment != null) {
+                    List<Fragment> fragments = navHostFragment.getChildFragmentManager().getFragments();
+                    for (Fragment fragment : fragments) {
+                        if (fragment instanceof NfcReaderFragment && fragment.isVisible()) {
+                            ((NfcReaderFragment) fragment).onNewIntent(intent);
+                            break;
+                        }
+                    }
                 }
             }
         }

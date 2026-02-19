@@ -128,19 +128,19 @@ public class NfcReaderManager {
     }
 
     /**
-     * 解析 NDEF 记录内容
+     * 解析 NDEF 内容，支持多条记录
      */
     public String parseNdefContent(NdefMessage ndefMessage) {
         if (ndefMessage == null || ndefMessage.getRecords().length == 0) {
-            return "";
+            return "无内容";
         }
 
         StringBuilder content = new StringBuilder();
-        for (NdefRecord record : ndefMessage.getRecords()) {
-            String recordContent = parseNdefRecord(record);
-            if (recordContent != null && !recordContent.isEmpty()) {
-                content.append(recordContent).append("\n");
-            }
+        NdefRecord[] records = ndefMessage.getRecords();
+        for (int i = 0; i < records.length; i++) {
+            content.append("记录 ").append(i + 1).append(":\n");
+            String recordContent = parseNdefRecord(records[i]);
+            content.append(recordContent != null ? recordContent : "无法解析的内容").append("\n\n");
         }
 
         return content.toString().trim();
@@ -152,49 +152,96 @@ public class NfcReaderManager {
     private String parseNdefRecord(NdefRecord record) {
         try {
             byte[] payload = record.getPayload();
+            short tnf = record.getTnf();
+            byte[] type = record.getType();
             
             // 处理文本类型
-            if (record.getTnf() == NdefRecord.TNF_WELL_KNOWN && 
-                    record.getType()[0] == NdefRecord.RTD_TEXT[0]) {
+            if (tnf == NdefRecord.TNF_WELL_KNOWN && 
+                    java.util.Arrays.equals(type, NdefRecord.RTD_TEXT)) {
                 int langCodeLength = payload[0] & 0x3F;
-                String text = new String(payload, langCodeLength + 1, payload.length - langCodeLength - 1, "UTF-8");
-                return text;
+                return new String(payload, langCodeLength + 1, payload.length - langCodeLength - 1, "UTF-8");
             }
             
             // 处理 URI 类型
-            if (record.getTnf() == NdefRecord.TNF_WELL_KNOWN && 
-                    record.getType()[0] == NdefRecord.RTD_URI[0]) {
-                String uri = new String(payload, 1, payload.length - 1, "UTF-8");
-                return uri;
+            if (tnf == NdefRecord.TNF_WELL_KNOWN && 
+                    java.util.Arrays.equals(type, NdefRecord.RTD_URI)) {
+                String prefix = "";
+                if (payload.length > 0) {
+                    byte prefixCode = payload[0];
+                    prefix = getUriPrefix(prefixCode);
+                }
+                return prefix + new String(payload, 1, payload.length - 1, "UTF-8");
             }
             
-            // 处理其他类型，尝试转换为字符串
-            return new String(payload, "UTF-8");
+            // 处理智能海报
+            if (tnf == NdefRecord.TNF_WELL_KNOWN && 
+                    java.util.Arrays.equals(type, NdefRecord.RTD_SMART_POSTER)) {
+                return "智能海报 (Smart Poster)";
+            }
+
+            // 处理 MIME 类型
+            if (tnf == NdefRecord.TNF_MIME_MEDIA) {
+                return "MIME 类型: " + new String(type, "UTF-8");
+            }
+            
+            // 处理其他类型，尝试转换为十六进制
+            return "原始数据 (Hex): " + bytesToHex(payload);
         } catch (Exception e) {
             Log.e(TAG, "解析 NDEF 记录失败: " + e.getMessage());
-            return null;
+            return "解析错误";
+        }
+    }
+
+    private String getUriPrefix(byte prefixCode) {
+        switch (prefixCode) {
+            case 0x01: return "http://www.";
+            case 0x02: return "https://www.";
+            case 0x03: return "http://";
+            case 0x04: return "https://";
+            case 0x05: return "tel:";
+            case 0x06: return "mailto:";
+            default: return "";
         }
     }
 
     /**
-     * 获取 NDEF 内容类型
+     * 获取 NDEF 内容类型描述
      */
     public String getNdefContentType(NdefMessage ndefMessage) {
         if (ndefMessage == null || ndefMessage.getRecords().length == 0) {
-            return "UNKNOWN";
+            return "空标签";
+        }
+
+        int count = ndefMessage.getRecords().length;
+        if (count > 1) {
+            return "复合标签 (" + count + " 条记录)";
         }
 
         NdefRecord record = ndefMessage.getRecords()[0];
+        short tnf = record.getTnf();
+        byte[] type = record.getType();
         
-        if (record.getTnf() == NdefRecord.TNF_WELL_KNOWN) {
-            if (record.getType()[0] == NdefRecord.RTD_TEXT[0]) {
-                return "TEXT";
-            } else if (record.getType()[0] == NdefRecord.RTD_URI[0]) {
-                return "URL";
-            }
+        if (tnf == NdefRecord.TNF_WELL_KNOWN) {
+            if (java.util.Arrays.equals(type, NdefRecord.RTD_TEXT)) return "文本";
+            if (java.util.Arrays.equals(type, NdefRecord.RTD_URI)) return "链接";
+            if (java.util.Arrays.equals(type, NdefRecord.RTD_SMART_POSTER)) return "智能海报";
+        } else if (tnf == NdefRecord.TNF_MIME_MEDIA) {
+            return "MIME 媒体";
         }
         
-        return "OTHER";
+        return "其他类型";
+    }
+
+    /**
+     * 将字节数组转换为十六进制字符串
+     */
+    public String bytesToHex(byte[] bytes) {
+        if (bytes == null) return "";
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            hexString.append(String.format("%02X", b));
+        }
+        return hexString.toString();
     }
 
     /**
@@ -204,19 +251,14 @@ public class NfcReaderManager {
         if (ndefMessage == null) {
             return "";
         }
-
-        byte[] ndefBytes = ndefMessage.toByteArray();
-        StringBuilder hexString = new StringBuilder();
-        for (byte b : ndefBytes) {
-            hexString.append(String.format("%02X", b));
-        }
-        return hexString.toString();
+        return bytesToHex(ndefMessage.toByteArray());
     }
 
     /**
      * 从十六进制字符串恢复 NDEF 消息
      */
     public NdefMessage hexStringToNdef(String hexString) {
+        if (hexString == null || hexString.isEmpty()) return null;
         try {
             byte[] ndefBytes = new byte[hexString.length() / 2];
             for (int i = 0; i < ndefBytes.length; i++) {

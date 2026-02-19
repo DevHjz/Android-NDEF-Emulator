@@ -17,6 +17,7 @@ import com.example.hcendeftag.database.NdefTagDatabase;
 import com.example.hcendeftag.model.NdefTag;
 import com.example.hcendeftag.nfc.NfcReaderManager;
 import com.example.hcendeftag.databinding.FragmentNfcReaderBinding;
+import com.example.hcendeftag.hce.HceSimulationManager;
 
 /**
  * NFC 读卡 Fragment
@@ -25,6 +26,7 @@ public class NfcReaderFragment extends Fragment {
     private FragmentNfcReaderBinding binding;
     private NfcReaderManager nfcReader;
     private NdefTagDatabase database;
+    private HceSimulationManager hceManager;
     private NdefMessage currentNdefMessage;
 
     @Override
@@ -42,6 +44,7 @@ public class NfcReaderFragment extends Fragment {
 
         nfcReader = new NfcReaderManager(requireActivity());
         database = new NdefTagDatabase(requireContext());
+        hceManager = new HceSimulationManager(requireContext());
 
         // 检查 NFC 支持
         if (!nfcReader.isNfcSupported()) {
@@ -50,13 +53,7 @@ public class NfcReaderFragment extends Fragment {
             return;
         }
 
-        if (!nfcReader.isNfcEnabled()) {
-            binding.statusText.setText("NFC 未启用，请在设置中启用 NFC");
-            binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_orange_light));
-        } else {
-            binding.statusText.setText("请将 NFC 标签靠近设备");
-            binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_green_light));
-        }
+        updateNfcStatus();
 
         // 保存按钮
         binding.btnSave.setOnClickListener(v -> saveCurrentTag());
@@ -68,10 +65,21 @@ public class NfcReaderFragment extends Fragment {
         binding.btnClear.setOnClickListener(v -> clearCurrentTag());
     }
 
+    private void updateNfcStatus() {
+        if (!nfcReader.isNfcEnabled()) {
+            binding.statusText.setText("NFC 未启用，请在设置中启用 NFC");
+            binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_orange_light));
+        } else {
+            binding.statusText.setText("请将 NFC 标签靠近设备");
+            binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_green_light));
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         nfcReader.enableForegroundDispatch();
+        updateNfcStatus();
     }
 
     @Override
@@ -80,7 +88,6 @@ public class NfcReaderFragment extends Fragment {
         nfcReader.disableForegroundDispatch();
     }
 
-    // 修复：移除 @Override 注解（Fragment无此父类方法），删除 super.onNewIntent 调用
     public void onNewIntent(Intent intent) {
         handleNfcIntent(intent);
     }
@@ -97,10 +104,13 @@ public class NfcReaderFragment extends Fragment {
 
             binding.contentText.setText(content);
             binding.typeText.setText("类型: " + contentType);
-            binding.statusText.setText("成功读取 NDEF 标签");
+            binding.statusText.setText("成功读取 NDEF 标签 (" + ndefMessage.getRecords().length + " 条记录)");
             binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_green_light));
+            
+            binding.btnSave.setEnabled(true);
+            binding.btnSimulate.setEnabled(true);
         } else {
-            binding.statusText.setText("读取失败，请重试");
+            binding.statusText.setText("读取失败或标签不包含 NDEF 数据");
             binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_red_light));
         }
     }
@@ -117,10 +127,10 @@ public class NfcReaderFragment extends Fragment {
         // 显示对话框让用户输入标签名称
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("保存标签");
-        builder.setMessage("请输入标签名称:");
+        builder.setMessage("请输入标签名称以方便查找:");
 
         EditText input = new EditText(requireContext());
-        input.setHint("标签名称");
+        input.setHint("例如: 我的门禁卡");
         builder.setView(input);
 
         builder.setPositiveButton("保存", (dialog, which) -> {
@@ -139,7 +149,7 @@ public class NfcReaderFragment extends Fragment {
 
             long id = database.insertNdefTag(tag);
             if (id > 0) {
-                Toast.makeText(requireContext(), "标签已保存", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "标签 \"" + tagName + "\" 已保存", Toast.LENGTH_SHORT).show();
                 clearCurrentTag();
             } else {
                 Toast.makeText(requireContext(), "保存失败", Toast.LENGTH_SHORT).show();
@@ -159,8 +169,8 @@ public class NfcReaderFragment extends Fragment {
             return;
         }
 
-        // 这里可以启动 HCE 模拟
-        Toast.makeText(requireContext(), "已启动 HCE 模拟", Toast.LENGTH_SHORT).show();
+        hceManager.startHceSimulationWithMessage(currentNdefMessage);
+        Toast.makeText(requireContext(), "已启动 HCE 模拟当前标签内容", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -172,6 +182,8 @@ public class NfcReaderFragment extends Fragment {
         binding.typeText.setText("");
         binding.statusText.setText("请将 NFC 标签靠近设备");
         binding.statusText.setTextColor(getResources().getColor(android.R.color.holo_green_light));
+        binding.btnSave.setEnabled(false);
+        binding.btnSimulate.setEnabled(false);
     }
 
     @Override
