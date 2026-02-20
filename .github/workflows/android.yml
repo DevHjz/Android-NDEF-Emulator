@@ -9,7 +9,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -24,12 +23,24 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-      
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
 
-    - name: Upload APK
+    # 从 Secrets 中解码并生成 keystore 文件
+    - name: Decode Keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/keystore.jks
+
+    # 使用签名参数构建 Release 版本 APK
+    - name: Build signed APK with Gradle
+      run: |
+        ./gradlew assembleRelease \
+          -Pandroid.injected.signing.store.file=${{ github.workspace }}/keystore.jks \
+          -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+          -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+          -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+
+    # 上传签名后的 APK
+    - name: Upload signed APK
       uses: actions/upload-artifact@v4
       with:
-        name: nfc-hce-emulator-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: nfc-hce-emulator-release-signed
+        path: app/build/outputs/apk/release/app-release.apk

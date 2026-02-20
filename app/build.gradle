@@ -16,8 +16,21 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // 新增：签名配置，兼容本地和CI构建
+    signingConfigs {
+        release {
+            // 优先读取命令行传入的参数（CI环境），没有则用本地默认值（不影响本地开发）
+            storeFile file(System.getProperty("android.injected.signing.store.file", "local_keystore.jks"))
+            storePassword System.getProperty("android.injected.signing.store.password", "")
+            keyAlias System.getProperty("android.injected.signing.key.alias", "")
+            keyPassword System.getProperty("android.injected.signing.key.password", "")
+        }
+    }
+
     buildTypes {
         release {
+            // 关键修改：关联上面的签名配置
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -32,7 +45,6 @@ android {
 }
 
 dependencies {
-
     implementation libs.appcompat
     implementation libs.material
     implementation libs.constraintlayout

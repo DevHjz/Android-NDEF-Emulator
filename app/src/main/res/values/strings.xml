@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">NEDF标签模拟</string>
+    <string name="app_name">NDEF 标签模拟</string>
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">读卡</string>
